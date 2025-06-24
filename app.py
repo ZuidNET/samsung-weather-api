@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-API_KEY = "YOUR_OPENWEATHER_API_KEY"  # Replace with your real OpenWeatherMap API key
+API_KEY = "8c59d438f271df58f85c89b870d0d973"  # Replace with your real OpenWeatherMap API key
 CITY = "Manchester,GB"
 CITY_ID = "329260"
 URL = f"https://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&units=metric"
