@@ -54,4 +54,4 @@ def get_icon_code(openweather_icon):
     return mapping.get(openweather_icon, "7")  # default: Cloudy
 
 if __name__ == "__main__":
-    app.ru
+    app.run
