@@ -1,9 +1,10 @@
 from flask import Flask, Response
 import requests
+from datetime import datetime
 
 app = Flask(__name__)
 
-API_KEY = "8c59d438f271df58f85c89b870d0d973"  # Replace with your real OpenWeatherMap API key
+API_KEY = "8c59d438f271df58f85c89b870d0d973"  # Your OpenWeatherMap API key
 CITY = "Manchester,GB"
 CITY_ID = "329260"
 URL = f"https://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&units=metric"
@@ -14,10 +15,17 @@ def weather():
 
     temperature = int(data["main"]["temp"])
     realfeel = int(data["main"]["feels_like"])
-    humidity = f'{data["main"]["humidity"]}%'
+    humidity = int(data["main"]["humidity"])  # no %
+    pressure = int(data["main"]["pressure"])
+    visibility = int(data.get("visibility", 10000)) // 1000  # convert m to km
+    wind_speed = int(data["wind"]["speed"])
+    wind_dir = deg_to_compass(data["wind"].get("deg", 0))
+    dewpoint = int(data["main"]["temp"] - ((100 - humidity)/5))  # Approximation
+    weather_time = datetime.utcfromtimestamp(data["dt"]).isoformat() + "Z"
+
     openweather_icon = data["weather"][0]["icon"]
     accuweather_icon, accuweather_text = get_icon_and_text(openweather_icon)
-    daylight = "True" if openweather_icon.endswith("d") else "False"
+    daylight = "true" if openweather_icon.endswith("d") else "false"
 
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <weather>
@@ -25,19 +33,36 @@ def weather():
 <city>Manchester</city>
 <country code="GB">United Kingdom</country>
 <cityId>{CITY_ID}</cityId>
+<latitude>{data['coord']['lat']}</latitude>
+<longitude>{data['coord']['lon']}</longitude>
+<time>{datetime.now().strftime('%H:%M')}</time>
+<time_zone>+1</time_zone>
+<time_zone_abbreviation>BST</time_zone_abbreviation>
 </local>
 <currentconditions daylight="{daylight}">
-<observationtime>Live</observationtime>
+<observationtime>{weather_time}</observationtime>
 <temperature>{temperature}</temperature>
 <realfeel>{realfeel}</realfeel>
 <unit>C</unit>
 <humidity>{humidity}</humidity>
+<pressure>{pressure}</pressure>
+<visibility>{visibility}</visibility>
+<dewpoint>{dewpoint}</dewpoint>
+<wind>
+  <speed>{wind_speed}</speed>
+  <direction>{wind_dir}</direction>
+</wind>
+<uvindex>5</uvindex>
 <weathertext>{accuweather_text}</weathertext>
 <weathericon>{accuweather_icon}</weathericon>
 </currentconditions>
-</weather>
-"""
+</weather>"""
     return Response(xml, mimetype='application/xml')
+
+def deg_to_compass(deg):
+    dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    ix = round(deg / 45) % 8
+    return dirs[ix]
 
 def get_icon_and_text(openweather_icon):
     mapping = {
